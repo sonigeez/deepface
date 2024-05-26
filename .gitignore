@@ -1,4 +1,5 @@
 inswapper_128.onnx
+inswapper_128_fp16.onnx
 Dockerfile
 .cog
 __pycache__

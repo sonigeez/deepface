@@ -1,7 +1,6 @@
 build:
   gpu: true
-  cuda: "11.8"
-  python_version: "3.8"
+  python_version: "3.10"
   run:
     - pip uninstall onnxruntime onnxruntime-gpu -y
     - pip install onnxruntime-gpu==1.15.0
@@ -11,14 +10,14 @@ build:
     - "ftfy==6.1.1"
     - "scipy==1.9.3"
     - "Pillow==9.4.0"
-    - "mediapipe==0.9.0.1"
+    - "mediapipe"
     - "numpy==1.24.3"
     - "opencv-python==4.7.0.72"
     - "onnx==1.14.0"
     - "insightface==0.7.3"
     - "psutil==5.9.5"
     - "tensorflow>=2.0.0"
-    - "gfpgan==1.4.0"
+    - "gfpgan"
   system_packages:
     - ffmpeg
     - libsm6

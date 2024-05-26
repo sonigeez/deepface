@@ -7,12 +7,16 @@ from core.utils import rreplace
 from core.enhancer import enhance_face
 from scipy.spatial.distance import cosine
 
-if os.path.isfile("inswapper_128.onnx"):
-    face_swapper = insightface.model_zoo.get_model(
-        "inswapper_128.onnx", providers=core.globals.providers
-    )
-else:
-    quit('File "inswapper_128.onnx" does not exist!')
+face_swapper = None
+
+
+def get_face_swapper():
+    global face_swapper
+    if face_swapper is None:
+        face_swapper = insightface.model_zoo.get_model(
+            "inswapper_128_fp16.onnx", providers=core.globals.providers
+        )
+    return face_swapper
 
 
 def process_video(source_img, frame_paths, face_analyser, reference_img=None):

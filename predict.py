@@ -18,7 +18,7 @@ import cv2
 from typing import Iterator
 from subprocess import call, check_call
 
-from core.processor import process_video, process_img
+from core.processor import get_face_swapper, process_video, process_img
 from core.utils import (
     is_img,
     detect_fps,
@@ -28,7 +28,7 @@ from core.utils import (
     extract_frames,
 )
 from core.config import get_face
-from core.enhancer import enhance_face
+from core.enhancer import enhance_face, get_face_enhancer
 
 
 def status(string):
@@ -50,6 +50,22 @@ class Predictor(BasePredictor):
         self.face_analyser = insightface.app.FaceAnalysis(
             name="buffalo_l", providers=core.globals.providers
         )
+
+        if os.path.isfile("inswapper_128_fp16.onnx"):
+            print("Model already downloaded")
+        else:
+            run_cmd(
+                "wget https://github.com/facefusion/facefusion-assets/releases/download/models/inswapper_128_fp16.onnx"
+            )
+        if os.path.isfile("GFPGANv1.4.pth"):
+            print("Model already downloaded")
+        else:
+            run_cmd(
+                "wget https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.4.pth"
+            )
+
+        get_face_swapper()
+        get_face_enhancer()
         self.face_analyser.prepare(ctx_id=0, det_size=(640, 640))
         # assert torch.cuda.is_available()
 
@@ -79,10 +95,6 @@ class Predictor(BasePredictor):
         target = str(target)
         reference_image = str(reference_image) if reference_image else None
 
-        # face_analyser = insightface.app.FaceAnalysis(
-        #     name="buffalo_l", providers=core.globals.providers
-        # )
-        # face_analyser.prepare(ctx_id=0, det_size=(640, 640))
         face_analyser = self.face_analyser
 
         test_face = get_face(cv2.imread(source), face_analyser)
@@ -144,8 +156,8 @@ if __name__ == "__main__":
     predictor = Predictor()
     predictor.setup()
     for output in predictor.predict(
-        target=CogPath("target.jpeg"),
-        source=CogPath("source.jpg"),
+        source=CogPath("ritu.png"),
+        target=CogPath("mahi.png"),
         reference_image=None,
     ):
         print(output)

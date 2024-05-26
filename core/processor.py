@@ -33,6 +33,10 @@ def process_video(source_img, frame_paths, face_analyser, reference_img=None):
     for frame_path in frame_paths:
         frame = cv2.imread(frame_path)
         try:
+            # print percentage
+            print(
+                f"{frame_paths.index(frame_path) / len(frame_paths) * 100:.2f}%", end=""
+            )
             faces = face_analyser.get(frame)
             for face in faces:
                 if reference_face:
@@ -40,7 +44,8 @@ def process_video(source_img, frame_paths, face_analyser, reference_img=None):
                         result = face_swapper.get(
                             frame, face, source_face, paste_back=True
                         )
-                        cv2.imwrite(frame_path, result)
+                        enhanced_result = enhance_face(result)
+                        cv2.imwrite(frame_path, enhanced_result)
                         print(".", end="")
                         break
                 else:
@@ -88,7 +93,7 @@ def process_img(source_img, target_path, face_analyser, reference_img=None):
     return target_path
 
 
-def match_faces(face1, face2, threshold=0.6):
+def match_faces(face1, face2, threshold=1):
     """
     Compare two faces based on their embeddings.
 

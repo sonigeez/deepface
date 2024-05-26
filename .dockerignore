@@ -13,6 +13,7 @@ docker-compose.yml
 .env
 .git
 .gitignore
-.dockerignore
+.dockerignor
 env
 output
+.github

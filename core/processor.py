@@ -44,14 +44,14 @@ def process_video(source_img, frame_paths, face_analyser, reference_img=None):
                         result = face_swapper.get(
                             frame, face, source_face, paste_back=True
                         )
-                        enhanced_result = enhance_face(result)
-                        cv2.imwrite(frame_path, enhanced_result)
+                        # enhanced_result = enhance_face(result)
+                        cv2.imwrite(frame_path, result)
                         print(".", end="")
                         break
                 else:
                     result = face_swapper.get(frame, face, source_face, paste_back=True)
-                    enhanced_result = enhance_face(result)
-                    cv2.imwrite(frame_path, enhanced_result)
+                    # enhanced_result = enhance_face(result)
+                    cv2.imwrite(frame_path, result)
                     print(".", end="")
                     break
             else:
@@ -93,7 +93,7 @@ def process_img(source_img, target_path, face_analyser, reference_img=None):
     return target_path
 
 
-def match_faces(face1, face2, threshold=1):
+def match_faces(face1, face2, threshold=0.8):
     """
     Compare two faces based on their embeddings.
 

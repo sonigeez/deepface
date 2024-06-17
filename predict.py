@@ -105,7 +105,12 @@ class Predictor(BasePredictor):
             return
 
         if is_img(target):
-            output = process_img(source, target, face_analyser, reference_image)
+            output, success = process_img(
+                source, target, face_analyser, reference_image
+            )
+            if not success:
+                print("\n[ERROR] Face swap failed on the image. Process stopped.")
+                return
             yield CogPath(output)
             status("swap successful!")
             return
@@ -138,7 +143,10 @@ class Predictor(BasePredictor):
 
         status("swapping in progress...")
         start_time = time.time()
-        process_video(source, frame_paths, face_analyser, reference_image)
+        success = process_video(source, frame_paths, face_analyser, reference_image)
+        if not success:
+            print("\n[ERROR] Face swap failed on the video. Process stopped.")
+            return
         end_time = time.time()
         print(f"Processing time: {end_time - start_time:.2f} seconds")
 
@@ -156,10 +164,20 @@ if __name__ == "__main__":
     predictor = Predictor()
     predictor.setup()
     for output in predictor.predict(
-        source=CogPath("source3.jpg"),
-        target=CogPath("target.mp4"),
+        source=CogPath("alia.jpg"),
+        target=CogPath("lady.mp4"),
         reference_image=CogPath("ref.png"),
     ):
         print(output)
         break
+
+    # is_face_swap_successful(cv2.imread("first_frame.jpg"))
+    #     env(base) ➜  deepface git:(main) ✗ python predict.py
+    # Black pixels: 115574
+    # No black pixels detected
+    # done
+    # env(base) ➜  deepface git:(main) ✗ python predict.py
+    # Black pixels: 128615
+    # Black pixels detected
+
     print("done")

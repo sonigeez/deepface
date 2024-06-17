@@ -22,13 +22,17 @@ def get_face_swapper():
 import numpy as np
 
 
-def is_face_swap_successful(image, threshold=0.1):
+def is_face_swap_successful(image):
     """Check if face swap was successful by detecting large black areas."""
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     black_pixels = np.sum(gray == 0)
-    total_pixels = gray.size
-    black_ratio = black_pixels / total_pixels
-    return black_ratio < threshold
+    print(f"Black pixels: {black_pixels}")
+    if black_pixels > 125000:
+        print("Black pixels detected")
+        return False
+    else:
+        print("No black pixels detected")
+        return True
 
 
 def process_video(source_img, frame_paths, face_analyser, reference_img=None):
@@ -42,10 +46,12 @@ def process_video(source_img, frame_paths, face_analyser, reference_img=None):
         )
         return False
 
+    check_success = True
+
     for frame_path in frame_paths:
+        print(frame_path)
         frame = cv2.imread(frame_path)
         try:
-            # print percentage
             print(
                 f"{frame_paths.index(frame_path) / len(frame_paths) * 100:.2f}%", end=""
             )
@@ -57,18 +63,22 @@ def process_video(source_img, frame_paths, face_analyser, reference_img=None):
                             frame, face, source_face, paste_back=True
                         )
                         enhanced_result = enhance_face(result)
-                        if not is_face_swap_successful(enhanced_result):
+                        if check_success and not is_face_swap_successful(
+                            enhanced_result
+                        ):
                             return False
                         cv2.imwrite(frame_path, enhanced_result)
                         print(".", end="")
+                        check_success = False  # Disable further success checks
                         break
                 else:
                     result = face_swapper.get(frame, face, source_face, paste_back=True)
                     enhanced_result = enhance_face(result)
-                    if not is_face_swap_successful(enhanced_result):
+                    if check_success and not is_face_swap_successful(enhanced_result):
                         return False
                     cv2.imwrite(frame_path, enhanced_result)
                     print(".", end="")
+                    check_success = False  # Disable further success checks
                     break
             else:
                 print("S", end="")

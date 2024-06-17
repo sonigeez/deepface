@@ -19,6 +19,18 @@ def get_face_swapper():
     return face_swapper
 
 
+import numpy as np
+
+
+def is_face_swap_successful(image, threshold=0.1):
+    """Check if face swap was successful by detecting large black areas."""
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    black_pixels = np.sum(gray == 0)
+    total_pixels = gray.size
+    black_ratio = black_pixels / total_pixels
+    return black_ratio < threshold
+
+
 def process_video(source_img, frame_paths, face_analyser, reference_img=None):
     source_face = get_face(cv2.imread(source_img), face_analyser)
     reference_face = (
@@ -28,7 +40,7 @@ def process_video(source_img, frame_paths, face_analyser, reference_img=None):
         print(
             "\n[WARNING] No face detected in reference image. Please try with another one.\n"
         )
-        return
+        return False
 
     for frame_path in frame_paths:
         frame = cv2.imread(frame_path)
@@ -44,14 +56,18 @@ def process_video(source_img, frame_paths, face_analyser, reference_img=None):
                         result = face_swapper.get(
                             frame, face, source_face, paste_back=True
                         )
-                        # enhanced_result = enhance_face(result)
-                        cv2.imwrite(frame_path, result)
+                        enhanced_result = enhance_face(result)
+                        if not is_face_swap_successful(enhanced_result):
+                            return False
+                        cv2.imwrite(frame_path, enhanced_result)
                         print(".", end="")
                         break
                 else:
                     result = face_swapper.get(frame, face, source_face, paste_back=True)
-                    # enhanced_result = enhance_face(result)
-                    cv2.imwrite(frame_path, result)
+                    enhanced_result = enhance_face(result)
+                    if not is_face_swap_successful(enhanced_result):
+                        return False
+                    cv2.imwrite(frame_path, enhanced_result)
                     print(".", end="")
                     break
             else:
@@ -59,6 +75,7 @@ def process_video(source_img, frame_paths, face_analyser, reference_img=None):
         except Exception as e:
             print("E", end="")
             pass
+    return True
 
 
 def process_img(source_img, target_path, face_analyser, reference_img=None):
@@ -72,7 +89,7 @@ def process_img(source_img, target_path, face_analyser, reference_img=None):
         print(
             "\n[WARNING] No face detected in reference image. Please try with another one.\n"
         )
-        return target_path
+        return target_path, False
 
     for face in faces:
         if reference_face:
@@ -83,6 +100,9 @@ def process_img(source_img, target_path, face_analyser, reference_img=None):
             result = face_swapper.get(frame, face, source_face, paste_back=True)
             break
     enhanced_result = enhance_face(result)
+    if not is_face_swap_successful(enhanced_result):
+        return target_path, False
+
     target_path = (
         rreplace(target_path, "/", "/swapped-", 1)
         if "/" in target_path
@@ -90,7 +110,7 @@ def process_img(source_img, target_path, face_analyser, reference_img=None):
     )
     print(target_path)
     cv2.imwrite(target_path, enhanced_result)
-    return target_path
+    return target_path, True
 
 
 def match_faces(face1, face2, threshold=0.8):

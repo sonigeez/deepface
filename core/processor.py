@@ -44,14 +44,14 @@ def process_video(source_img, frame_paths, face_analyser, reference_img=None):
                         result = face_swapper.get(
                             frame, face, source_face, paste_back=True
                         )
-                        # enhanced_result = enhance_face(result)
-                        cv2.imwrite(frame_path, result)
+                        enhanced_result = enhance_face(result)
+                        cv2.imwrite(frame_path, enhanced_result)
                         print(".", end="")
                         break
                 else:
                     result = face_swapper.get(frame, face, source_face, paste_back=True)
-                    # enhanced_result = enhance_face(result)
-                    cv2.imwrite(frame_path, result)
+                    enhanced_result = enhance_face(result)
+                    cv2.imwrite(frame_path, enhanced_result)
                     print(".", end="")
                     break
             else:
@@ -74,22 +74,31 @@ def process_img(source_img, target_path, face_analyser, reference_img=None):
         )
         return target_path
 
+    result = frame.copy()  # Start with the original frame and modify it incrementally
+
     for face in faces:
         if reference_face:
+            # Swap only matching faces if a reference face is provided
             if match_faces(face, reference_face):
-                result = face_swapper.get(frame, face, source_face, paste_back=True)
-                break
+                result = face_swapper.get(result, face, source_face, paste_back=True)
         else:
-            result = face_swapper.get(frame, face, source_face, paste_back=True)
-            break
+            # Swap all faces if no reference face is provided
+            result = face_swapper.get(result, face, source_face, paste_back=True)
+
+    # Enhance the final result after all swaps
     enhanced_result = enhance_face(result)
+
+    # Modify target path to include the 'swapped-' prefix
     target_path = (
         rreplace(target_path, "/", "/swapped-", 1)
         if "/" in target_path
         else "swapped-" + target_path
     )
     print(target_path)
+    
+    # Save the final image with all face swaps
     cv2.imwrite(target_path, enhanced_result)
+    
     return target_path
 
 

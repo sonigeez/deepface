@@ -156,9 +156,9 @@ if __name__ == "__main__":
     predictor = Predictor()
     predictor.setup()
     for output in predictor.predict(
-        source=CogPath("alia.jpg"),
-        target=CogPath("sanjeev.mp4"),
-        reference_image=CogPath("ref.jpg"),
+        source=CogPath("source.jpg"),
+        target=CogPath("sunfeast.jpeg"),
+        reference_image=CogPath("sunfeast.jpeg"),
     ):
         print(output)
         break

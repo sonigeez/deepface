@@ -7,6 +7,7 @@ import torch
 import core.globals
 import insightface
 
+
 if not torch.cuda.is_available():
     core.globals.providers = ["CPUExecutionProvider"]
     print("gpu poor detected using cpu to run the model")
@@ -157,8 +158,8 @@ if __name__ == "__main__":
     predictor.setup()
     for output in predictor.predict(
         source=CogPath("source.jpg"),
-        target=CogPath("sunfeast.jpeg"),
-        reference_image=CogPath("sunfeast.jpeg"),
+        target=CogPath("target.jpg"),
+        reference_image=CogPath("target.jpg"),
     ):
         print(output)
         break

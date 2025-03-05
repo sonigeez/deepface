@@ -6,6 +6,7 @@ import shutil
 import torch
 import core.globals
 import insightface
+from typing import List, Iterator
 
 if not torch.cuda.is_available():
     core.globals.providers = ["CPUExecutionProvider"]
@@ -15,7 +16,6 @@ import glob
 import os
 from pathlib import Path
 import cv2
-from typing import Iterator
 from subprocess import call, check_call
 
 from core.processor import get_face_swapper, process_video, process_img
@@ -45,7 +45,7 @@ def run_cmd(command):
 
 class Predictor(BasePredictor):
     def setup(self):
-        time.sleep(10)
+        time.sleep(6)
         # check_call("nvidia-smi", shell=True)
         self.face_analyser = insightface.app.FaceAnalysis(
             name="buffalo_l", providers=core.globals.providers
@@ -71,41 +71,42 @@ class Predictor(BasePredictor):
 
     def predict(
         self,
-        source: CogPath = Input(description="Source", default=None),
+        sources: List[CogPath] = Input(description="List of source images", default=None),
         target: CogPath = Input(description="Target", default=None),
-        reference_image: CogPath = Input(description="Reference Image", default=None),
+        reference_images: List[CogPath] = Input(description="List of reference images", default=None),
         keep_fps: bool = Input(description="Keep FPS", default=True),
         keep_frames: bool = Input(description="Keep Frames", default=True),
     ) -> Iterator[CogPath]:
 
-        print("source: ", source)
+        print("sources: ", sources)
         print("target: ", target)
-        print("reference_image: ", reference_image)
+        print("reference_images: ", reference_images)
         print("keep_fps: ", keep_fps)
         print("keep_frames: ", keep_frames)
 
-        if not source or not os.path.isfile(source):
-            print("\n[WARNING] Please select an image containing a face.")
+        if not sources or len(sources) == 0:
+            print("\n[WARNING] Please provide at least one source image containing a face.")
             return
         elif not target or not os.path.isfile(target):
-            print("\n[WARNING] Please select a video/image to swap face in.")
+            print("\n[WARNING] Please select a video/image to swap faces in.")
             return
 
-        source = str(source)
-        target = str(target)
-        reference_image = str(reference_image) if reference_image else None
-
+        # Convert CogPath objects to strings
+        source_paths = [str(source) for source in sources]
+        target_path = str(target)
+        reference_paths = [str(ref) for ref in reference_images] if reference_images else None
+        # check if source path and target are equal
+        
         face_analyser = self.face_analyser
 
-        test_face = get_face(cv2.imread(source), face_analyser)
+        # Check at least one source face
+        test_face = get_face(cv2.imread(source_paths[0]), face_analyser)
         if not test_face:
-            print(
-                "\n[WARNING] No face detected in source image. Please try with another one.\n"
-            )
+            print("\n[WARNING] No face detected in first source image. Please try with another one.\n")
             return
 
-        if is_img(target):
-            output = process_img(source, target, face_analyser, reference_image)
+        if is_img(target_path):
+            output = process_img(source_paths, target_path, face_analyser, reference_paths)
             yield CogPath(output)
             status("swap successful!")
             return
@@ -118,17 +119,17 @@ class Predictor(BasePredictor):
         Path(output_dir).mkdir(exist_ok=True)
 
         status("detecting video's FPS...")
-        fps = detect_fps(target)
+        fps = detect_fps(target_path)
 
         if not keep_fps and fps > 30:
             this_path = output_dir + "/" + video_name + ".mp4"
-            set_fps(target, this_path, 30)
-            target, fps = this_path, 30
+            set_fps(target_path, this_path, 30)
+            target_path, fps = this_path, 30
         else:
-            shutil.copy(target, output_dir)
+            shutil.copy(target_path, output_dir)
 
         status("extracting frames...")
-        extract_frames(target, output_dir)
+        extract_frames(target_path, output_dir)
         frame_paths = tuple(
             sorted(
                 glob.glob(output_dir + f"/*.png"),
@@ -138,7 +139,7 @@ class Predictor(BasePredictor):
 
         status("swapping in progress...")
         start_time = time.time()
-        process_video(source, frame_paths, face_analyser, reference_image)
+        process_video(source_paths, frame_paths, face_analyser, reference_paths)
         end_time = time.time()
         print(f"Processing time: {end_time - start_time:.2f} seconds")
 
@@ -146,7 +147,7 @@ class Predictor(BasePredictor):
         output_file = create_video(video_name, fps, output_dir)
 
         status("adding audio...")
-        output_file = add_audio(output_dir, target, keep_frames)
+        output_file = add_audio(output_dir, target_path, keep_frames)
         print("\n\nVideo saved as:", output_file, "\n\n")
         yield CogPath(output_file)
         status("swap successful!")
@@ -156,9 +157,9 @@ if __name__ == "__main__":
     predictor = Predictor()
     predictor.setup()
     for output in predictor.predict(
-        source=CogPath("source.jpg"),
-        target=CogPath("sunfeast.jpeg"),
-        reference_image=CogPath("sunfeast.jpeg"),
+        sources=[CogPath("naina.jpg"), CogPath("amir.jpg"), CogPath("shah.jpg")],
+        target=CogPath("image.jpg"),
+        reference_images=[CogPath("ref1.jpg"), CogPath("ref2.jpg"),CogPath("ref3.jpg")],
     ):
         print(output)
         break
